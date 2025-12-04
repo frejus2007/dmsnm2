@@ -6,108 +6,66 @@
 
 @layer base {
   :root {
-    /* Main palette - Safe Space Theme */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 7%;
-
-    --card: 0 0% 96%;
-    --card-foreground: 0 0% 7%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
-
-    /* Hope Green as primary */
-    --primary: 147 52% 47%;
-    --primary-foreground: 0 0% 100%;
-
-    /* Deep Green for accents */
-    --secondary: 147 52% 37%;
-    --secondary-foreground: 0 0% 100%;
-
-    /* Soft lavender for muted */
-    --muted: 260 40% 90%;
-    --muted-foreground: 215 14% 34%;
-
-    /* Lavender accent */
-    --accent: 260 45% 82%;
-    --accent-foreground: 0 0% 7%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 147 52% 47%;
-
-    --radius: 1rem;
-
-    /* Custom tokens */
-    --hope-green: 147 52% 47%;
-    --deep-green: 147 52% 37%;
-    --soft-lavender: 260 45% 82%;
-    --blue-grey: 213 14% 66%;
-    --soft-beige: 44 52% 78%;
-    --night-blue: 210 28% 29%;
-    --off-white: 0 0% 96%;
-
-    /* Gradients */
-    --gradient-hope: linear-gradient(135deg, hsl(147 52% 47%) 0%, hsl(147 52% 37%) 100%);
-    --gradient-calm: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(260 40% 97%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(147 52% 47% / 0.1) 0%, hsl(260 45% 82% / 0.2) 100%);
-
-    /* Shadows */
-    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.1);
-    --shadow-card: 0 8px 30px -8px hsl(147 52% 47% / 0.15);
-    --shadow-glow: 0 0 40px hsl(147 52% 47% / 0.2);
-
-    /* Sidebar */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 7%;
-    --sidebar-primary: 147 52% 47%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 260 40% 95%;
-    --sidebar-accent-foreground: 0 0% 7%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 147 52% 47%;
-  }
-
-  .dark {
+    /* Spotify-inspired dark theme - warm & human */
     --background: 0 0% 7%;
-    --foreground: 0 0% 96%;
+    --foreground: 0 0% 95%;
 
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 96%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 96%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 147 52% 47%;
-    --primary-foreground: 0 0% 100%;
+    /* Spotify Green - vibrant and human */
+    --primary: 141 76% 48%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 147 52% 37%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 0 0% 15%;
+    --muted: 0 0% 14%;
     --muted-foreground: 0 0% 65%;
 
-    --accent: 260 30% 25%;
-    --accent-foreground: 0 0% 96%;
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 95%;
 
-    --destructive: 0 62% 30%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 147 52% 47%;
+    --ring: 141 76% 48%;
 
+    --radius: 0.75rem;
+
+    /* Custom Spotify-like tokens */
+    --spotify-green: 141 76% 48%;
+    --spotify-green-bright: 141 76% 55%;
+    --spotify-black: 0 0% 7%;
+    --spotify-dark: 0 0% 11%;
+    --spotify-gray: 0 0% 16%;
+    --spotify-light-gray: 0 0% 70%;
+    --warm-gray: 30 5% 12%;
+
+    /* Gradients */
+    --gradient-spotify: linear-gradient(135deg, hsl(141 76% 48%) 0%, hsl(141 76% 38%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(0 0% 14%) 0%, hsl(0 0% 7%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 16%) 0%, hsl(0 0% 11%) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.5);
+    --shadow-card: 0 8px 30px -8px hsl(0 0% 0% / 0.6);
+    --shadow-glow: 0 0 40px hsl(141 76% 48% / 0.3);
+
+    /* Sidebar */
     --sidebar-background: 0 0% 7%;
-    --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 147 52% 47%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 141 76% 48%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 14%;
+    --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 147 52% 47%;
+    --sidebar-ring: 141 76% 48%;
   }
 }
 
@@ -124,17 +82,35 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Nunito', sans-serif;
   }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--accent));
+  }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-md border border-border/50 rounded-2xl;
+    @apply bg-card/90 backdrop-blur-md border border-border/50 rounded-xl;
     box-shadow: var(--shadow-card);
   }
 
   .gradient-text {
     @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-hope);
+    background-image: var(--gradient-spotify);
   }
 
   .hover-lift {
@@ -145,10 +121,22 @@
     @apply -translate-y-1;
     box-shadow: var(--shadow-card);
   }
+
+  .spotify-card {
+    @apply bg-card rounded-lg p-4 transition-all duration-300 hover:bg-accent cursor-pointer;
+  }
+
+  .admin-sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200;
+  }
+
+  .admin-sidebar-item.active {
+    @apply bg-accent text-foreground;
+  }
 }
 
 @layer utilities {
-  .safe-space-glow {
+  .spotify-glow {
     box-shadow: var(--shadow-glow);
   }
 

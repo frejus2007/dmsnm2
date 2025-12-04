@@ -168,7 +168,7 @@ export default function EpisodeDetail() {
                 className="flex items-center gap-4 mb-8"
               >
                 <Button
-                  variant={isFavorite ? "hope" : "outline"}
+                  variant={isFavorite ? "spotify" : "outline"}
                   onClick={() => setIsFavorite(!isFavorite)}
                 >
                   <Heart
@@ -219,7 +219,7 @@ export default function EpisodeDetail() {
                         Connectez-vous pour laisser un commentaire anonyme
                       </p>
                       <Link to="/auth">
-                        <Button variant="hope">Se connecter</Button>
+                        <Button variant="spotify">Se connecter</Button>
                       </Link>
                     </div>
                   )}

@@ -9,6 +9,12 @@ import EpisodeDetail from "./pages/EpisodeDetail";
 import Auth from "./pages/Auth";
 import Participer from "./pages/Participer";
 import KingOf from "./pages/KingOf";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminEpisodes from "./pages/admin/AdminEpisodes";
+import AdminComments from "./pages/admin/AdminComments";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminParticipations from "./pages/admin/AdminParticipations";
+import AdminKingOf from "./pages/admin/AdminKingOf";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +32,15 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/participer" element={<Participer />} />
           <Route path="/kingof" element={<KingOf />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/episodes" element={<AdminEpisodes />} />
+          <Route path="/admin/commentaires" element={<AdminComments />} />
+          <Route path="/admin/utilisateurs" element={<AdminUsers />} />
+          <Route path="/admin/participations" element={<AdminParticipations />} />
+          <Route path="/admin/kingof" element={<AdminKingOf />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

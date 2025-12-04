@@ -133,7 +133,7 @@ export default function Index() {
                 className="flex flex-col sm:flex-row items-center justify-center gap-4"
               >
                 <Link to="/episodes">
-                  <Button variant="hope" size="xl" className="w-full sm:w-auto">
+                  <Button variant="spotify" size="xl" className="w-full sm:w-auto">
                     <Headphones className="w-5 h-5 mr-2" />
                     Explorer les épisodes
                   </Button>
@@ -256,7 +256,7 @@ export default function Index() {
                   "Tu es le roi ou la reine de ta propre histoire. N'oublie jamais ça."
                 </blockquote>
                 <Link to="/kingof">
-                  <Button variant="hope" size="lg">
+                  <Button variant="spotify" size="lg">
                     Découvrir KingOf
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
@@ -302,7 +302,7 @@ export default function Index() {
                 Votre anonymat est garanti.
               </p>
               <Link to="/participer">
-                <Button variant="hope" size="xl">
+                <Button variant="spotify" size="xl">
                   Proposer ma participation
                   <Heart className="w-5 h-5 ml-2" />
                 </Button>

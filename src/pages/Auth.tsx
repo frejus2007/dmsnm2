@@ -175,7 +175,7 @@ export default function Auth() {
 
             <Button
               type="submit"
-              variant="hope"
+              variant="spotify"
               size="xl"
               className="w-full"
               disabled={isLoading}

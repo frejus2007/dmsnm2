@@ -60,21 +60,20 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        hope: {
-          DEFAULT: "hsl(var(--hope-green))",
-          deep: "hsl(var(--deep-green))",
+        spotify: {
+          DEFAULT: "hsl(var(--spotify-green))",
+          bright: "hsl(var(--spotify-green-bright))",
+          black: "hsl(var(--spotify-black))",
+          dark: "hsl(var(--spotify-dark))",
+          gray: "hsl(var(--spotify-gray))",
         },
-        lavender: "hsl(var(--soft-lavender))",
-        "blue-grey": "hsl(var(--blue-grey))",
-        beige: "hsl(var(--soft-beige))",
-        night: "hsl(var(--night-blue))",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        "2xl": "1.5rem",
-        "3xl": "2rem",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
       },
       keyframes: {
         "accordion-down": {
@@ -101,6 +100,10 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
         },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -109,10 +112,7 @@ export default {
         "slide-up": "slide-up 0.6s ease-out forwards",
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
         float: "float 6s ease-in-out infinite",
-      },
-      backgroundImage: {
-        "gradient-hope": "linear-gradient(135deg, hsl(var(--hope-green)) 0%, hsl(var(--deep-green)) 100%)",
-        "gradient-calm": "linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%)",
+        shimmer: "shimmer 2s linear infinite",
       },
     },
   },

@@ -72,7 +72,7 @@ export default function KingOf() {
                   histoire.
                 </p>
                 <div className="flex flex-wrap gap-4">
-                  <Button variant="hope" size="lg">
+                  <Button variant="spotify" size="lg">
                     Découvrir la collection
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
@@ -251,7 +251,7 @@ export default function KingOf() {
                   placeholder="Votre email"
                   className="w-full h-12 px-4 rounded-xl bg-primary-foreground/10 border border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-hope"
                 />
-                <Button variant="hope" size="lg" className="w-full sm:w-auto">
+                <Button variant="spotify" size="lg" className="w-full sm:w-auto">
                   M'inscrire
                 </Button>
               </div>
@@ -275,7 +275,7 @@ export default function KingOf() {
                 histoires inspirantes de résilience et d'authenticité.
               </p>
               <Link to="/episodes">
-                <Button variant="hope" size="xl">
+                <Button variant="spotify" size="xl">
                   Explorer les épisodes
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
