@@ -61,7 +61,7 @@ export default function Participer() {
               Votre demande a bien été envoyée. Nous reviendrons vers vous très
               prochainement pour discuter de votre participation.
             </p>
-            <Button variant="hope" onClick={() => setIsSubmitted(false)}>
+            <Button variant="spotify" onClick={() => setIsSubmitted(false)}>
               Envoyer une autre demande
             </Button>
           </motion.div>
@@ -200,7 +200,7 @@ export default function Participer() {
 
                 <Button
                   type="submit"
-                  variant="hope"
+                  variant="spotify"
                   size="xl"
                   className="w-full"
                   disabled={isLoading}

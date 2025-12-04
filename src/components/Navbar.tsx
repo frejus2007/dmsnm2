@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Leaf, Heart, Mic, User, Home } from "lucide-react";
+import { Menu, X, Leaf, Heart, Mic, User, Home, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -17,11 +17,11 @@ export function Navbar() {
   const location = useLocation();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border">
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-hope to-hope-deep flex items-center justify-center">
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center group-hover:scale-105 transition-transform">
             <Leaf className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="font-bold text-lg hidden sm:block">
@@ -39,10 +39,10 @@ export function Navbar() {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2",
+                  "px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2",
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                 )}
               >
                 <Icon className="w-4 h-4" />
@@ -54,14 +54,18 @@ export function Navbar() {
 
         {/* Auth Buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/auth">
+          <Link to="/admin">
             <Button variant="ghost" size="sm">
-              <User className="w-4 h-4 mr-1" />
+              <Settings className="w-4 h-4" />
+            </Button>
+          </Link>
+          <Link to="/auth">
+            <Button variant="outline" size="sm">
               Connexion
             </Button>
           </Link>
           <Link to="/auth?mode=signup">
-            <Button variant="hope" size="sm">
+            <Button variant="spotify" size="sm">
               S'inscrire
             </Button>
           </Link>
@@ -69,7 +73,7 @@ export function Navbar() {
 
         {/* Mobile Menu Toggle */}
         <button
-          className="md:hidden p-2 rounded-xl hover:bg-muted transition-colors"
+          className="md:hidden p-2 rounded-full hover:bg-accent transition-colors"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle menu"
         >
@@ -96,10 +100,10 @@ export function Navbar() {
                     to={item.path}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      "px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-3",
+                      "px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-3",
                       isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                     )}
                   >
                     <Icon className="w-5 h-5" />
@@ -115,7 +119,7 @@ export function Navbar() {
                 </Button>
               </Link>
               <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
-                <Button variant="hope" className="w-full">
+                <Button variant="spotify" className="w-full">
                   S'inscrire
                 </Button>
               </Link>
