@@ -1,0 +1,128 @@
+import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, Leaf, Heart, Mic, User, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const navItems = [
+  { path: "/", label: "Accueil", icon: Home },
+  { path: "/episodes", label: "Épisodes", icon: Mic },
+  { path: "/participer", label: "Participer", icon: Heart },
+  { path: "/kingof", label: "KingOf", icon: Leaf },
+];
+
+export function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
+      <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-hope to-hope-deep flex items-center justify-center">
+            <Leaf className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <span className="font-bold text-lg hidden sm:block">
+            Des mots sur nos maux
+          </span>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <Icon className="w-4 h-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Auth Buttons */}
+        <div className="hidden md:flex items-center gap-3">
+          <Link to="/auth">
+            <Button variant="ghost" size="sm">
+              <User className="w-4 h-4 mr-1" />
+              Connexion
+            </Button>
+          </Link>
+          <Link to="/auth?mode=signup">
+            <Button variant="hope" size="sm">
+              S'inscrire
+            </Button>
+          </Link>
+        </div>
+
+        {/* Mobile Menu Toggle */}
+        <button
+          className="md:hidden p-2 rounded-xl hover:bg-muted transition-colors"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle menu"
+        >
+          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </nav>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-background border-b border-border overflow-hidden"
+          >
+            <div className="container mx-auto px-4 py-4 flex flex-col gap-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-3",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+              <div className="border-t border-border my-2" />
+              <Link to="/auth" onClick={() => setIsOpen(false)}>
+                <Button variant="outline" className="w-full">
+                  <User className="w-4 h-4 mr-2" />
+                  Connexion
+                </Button>
+              </Link>
+              <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
+                <Button variant="hope" className="w-full">
+                  S'inscrire
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
+  );
+}
