@@ -9,10 +9,10 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-hope to-hope-deep flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                 <Leaf className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-bold text-lg">Des mots sur nos maux</span>
+              <span className="font-bold text-lg text-foreground">Des mots sur nos maux</span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
               Un espace safe où l'on met des mots sur nos maux pour s'exprimer
@@ -21,21 +21,21 @@ export function Footer() {
             <div className="flex items-center gap-3 mt-4">
               <a
                 href="#"
-                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
+                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors text-foreground"
                 aria-label="Instagram"
               >
                 <Instagram className="w-5 h-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
+                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors text-foreground"
                 aria-label="Twitter"
               >
                 <Twitter className="w-5 h-5" />
               </a>
               <a
                 href="mailto:contact@desmotssurnosmaux.com"
-                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
+                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors text-foreground"
                 aria-label="Email"
               >
                 <Mail className="w-5 h-5" />
@@ -45,7 +45,7 @@ export function Footer() {
 
           {/* Navigation */}
           <div>
-            <h4 className="font-semibold mb-4">Navigation</h4>
+            <h4 className="font-semibold mb-4 text-foreground">Navigation</h4>
             <ul className="space-y-2">
               <li>
                 <Link
@@ -71,20 +71,12 @@ export function Footer() {
                   Participer
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/kingof"
-                  className="text-muted-foreground hover:text-primary transition-colors text-sm"
-                >
-                  KingOf
-                </Link>
-              </li>
             </ul>
           </div>
 
           {/* Legal */}
           <div>
-            <h4 className="font-semibold mb-4">Légal</h4>
+            <h4 className="font-semibold mb-4 text-foreground">Légal</h4>
             <ul className="space-y-2">
               <li>
                 <Link

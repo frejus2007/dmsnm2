@@ -9,7 +9,6 @@ const navItems = [
   { path: "/", label: "Accueil", icon: Home },
   { path: "/episodes", label: "Épisodes", icon: Mic },
   { path: "/participer", label: "Participer", icon: Heart },
-  { path: "/kingof", label: "KingOf", icon: Leaf },
 ];
 
 export function Navbar() {
@@ -24,7 +23,7 @@ export function Navbar() {
           <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center group-hover:scale-105 transition-transform">
             <Leaf className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-bold text-lg hidden sm:block">
+          <span className="font-bold text-lg hidden sm:block text-foreground">
             Des mots sur nos maux
           </span>
         </Link>
