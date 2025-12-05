@@ -7,7 +7,6 @@ import {
   MessageSquare,
   Users,
   Mail,
-  Crown,
   LogOut,
   Menu,
   X,
@@ -29,7 +28,6 @@ const sidebarItems = [
   { path: "/admin/commentaires", label: "Commentaires", icon: MessageSquare },
   { path: "/admin/utilisateurs", label: "Utilisateurs", icon: Users },
   { path: "/admin/participations", label: "Participations", icon: Mail },
-  { path: "/admin/kingof", label: "KingOf", icon: Crown },
 ];
 
 export function AdminLayout({ children, title, description }: AdminLayoutProps) {
@@ -62,7 +60,7 @@ export function AdminLayout({ children, title, description }: AdminLayoutProps) 
                 <Leaf className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <span className="font-bold block">Admin</span>
+                <span className="font-bold block text-foreground">Admin</span>
                 <span className="text-xs text-muted-foreground">Des mots sur nos maux</span>
               </div>
             </Link>
@@ -116,7 +114,7 @@ export function AdminLayout({ children, title, description }: AdminLayoutProps) 
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold">{title}</h1>
+            <h1 className="text-lg font-bold text-foreground">{title}</h1>
             {description && (
               <p className="text-sm text-muted-foreground hidden sm:block">{description}</p>
             )}
