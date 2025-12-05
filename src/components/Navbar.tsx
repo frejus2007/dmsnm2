@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Leaf, Heart, Mic, User, Home, Settings } from "lucide-react";
+import { Menu, X, Leaf, Heart, Mic, User, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +20,13 @@ export function Navbar() {
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-10 h-10 rounded-full bg-primary flex items-center justify-center"
+          >
             <Leaf className="w-5 h-5 text-primary-foreground" />
-          </div>
+          </motion.div>
           <span className="font-bold text-lg hidden sm:block text-foreground">
             Des mots sur nos maux
           </span>
@@ -38,46 +42,47 @@ export function Navbar() {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2",
+                  "px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2 relative overflow-hidden",
                   isActive
                     ? "bg-accent text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                 )}
               >
-                <Icon className="w-4 h-4" />
-                {item.label}
+                <motion.span
+                  whileHover={{ scale: 1.1 }}
+                  className="flex items-center gap-2"
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </motion.span>
               </Link>
             );
           })}
         </div>
 
-        {/* Auth Buttons */}
+        {/* Auth Buttons - Admin button removed */}
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/admin">
-            <Button variant="ghost" size="sm">
-              <Settings className="w-4 h-4" />
-            </Button>
-          </Link>
           <Link to="/auth">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="transition-all duration-300 hover:scale-105">
               Connexion
             </Button>
           </Link>
           <Link to="/auth?mode=signup">
-            <Button variant="spotify" size="sm">
+            <Button variant="spotify" size="sm" className="transition-all duration-300 hover:scale-105">
               S'inscrire
             </Button>
           </Link>
         </div>
 
         {/* Mobile Menu Toggle */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           className="md:hidden p-2 rounded-full hover:bg-accent transition-colors"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle menu"
         >
           {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        </motion.button>
       </nav>
 
       {/* Mobile Menu */}
@@ -87,41 +92,54 @@ export function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
             className="md:hidden bg-background border-b border-border overflow-hidden"
           >
             <div className="container mx-auto px-4 py-4 flex flex-col gap-2">
-              {navItems.map((item) => {
+              {navItems.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
                 return (
-                  <Link
+                  <motion.div
                     key={item.path}
-                    to={item.path}
-                    onClick={() => setIsOpen(false)}
-                    className={cn(
-                      "px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-3",
-                      isActive
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                    )}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
                   >
-                    <Icon className="w-5 h-5" />
-                    {item.label}
-                  </Link>
+                    <Link
+                      to={item.path}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-3",
+                        isActive
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      )}
+                    >
+                      <Icon className="w-5 h-5" />
+                      {item.label}
+                    </Link>
+                  </motion.div>
                 );
               })}
-              <div className="border-t border-border my-2" />
-              <Link to="/auth" onClick={() => setIsOpen(false)}>
-                <Button variant="outline" className="w-full">
-                  <User className="w-4 h-4 mr-2" />
-                  Connexion
-                </Button>
-              </Link>
-              <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
-                <Button variant="spotify" className="w-full">
-                  S'inscrire
-                </Button>
-              </Link>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="border-t border-border my-2 pt-4 space-y-2"
+              >
+                <Link to="/auth" onClick={() => setIsOpen(false)}>
+                  <Button variant="outline" className="w-full">
+                    <User className="w-4 h-4 mr-2" />
+                    Connexion
+                  </Button>
+                </Link>
+                <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
+                  <Button variant="spotify" className="w-full">
+                    S'inscrire
+                  </Button>
+                </Link>
+              </motion.div>
             </div>
           </motion.div>
         )}
