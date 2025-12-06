@@ -1,16 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
   Search,
-  MoreHorizontal,
   Play,
   Edit2,
   Trash2,
   Eye,
   EyeOff,
-  ExternalLink,
   Link as LinkIcon,
+  Loader2,
+  Mic,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const categories = [
+  "Général",
   "Santé mentale",
   "Relations",
   "Développement personnel",
@@ -42,77 +44,171 @@ const categories = [
   "Travail",
 ];
 
-const mockEpisodes = [
-  {
-    id: "1",
-    title: "Apprendre à s'accepter : le chemin vers l'amour de soi",
-    description: "Dans cet épisode, nous explorons les étapes essentielles...",
-    category: "Développement personnel",
-    spotifyUrl: "https://open.spotify.com/episode/4rOoJ6Egrf8K2IrywzwOMk",
-    published: true,
-    views: 876,
-    comments: 24,
-    image: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=200",
-  },
-  {
-    id: "2",
-    title: "Gérer l'anxiété au quotidien",
-    description: "Des techniques concrètes pour apprivoiser l'anxiété...",
-    category: "Santé mentale",
-    spotifyUrl: "https://open.spotify.com/episode/example2",
-    published: true,
-    views: 1234,
-    comments: 42,
-    image: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=200",
-  },
-  {
-    id: "3",
-    title: "Les relations toxiques",
-    description: "Identifier les signes d'une relation toxique...",
-    category: "Relations",
-    spotifyUrl: "https://open.spotify.com/episode/example3",
-    published: false,
-    views: 0,
-    comments: 0,
-    image: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=200",
-  },
-];
+interface Episode {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  spotify_url: string;
+  image_url: string | null;
+  published: boolean;
+  created_at: string;
+}
 
 export default function AdminEpisodes() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [spotifyLink, setSpotifyLink] = useState("");
+  const [episodeTitle, setEpisodeTitle] = useState("");
+  const [episodeDescription, setEpisodeDescription] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [isPageLoading, setIsPageLoading] = useState(true);
 
-  const handleAddEpisode = async () => {
-    if (!spotifyLink) {
+  useEffect(() => {
+    fetchEpisodes();
+  }, []);
+
+  const fetchEpisodes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("episodes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setEpisodes(data || []);
+    } catch (error) {
+      console.error("Error fetching episodes:", error);
       toast({
         title: "Erreur",
-        description: "Veuillez coller un lien Spotify",
+        description: "Impossible de charger les épisodes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPageLoading(false);
+    }
+  };
+
+  const handleAddEpisode = async () => {
+    if (!spotifyLink || !episodeTitle) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez remplir le lien Spotify et le titre",
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setIsDialogOpen(false);
-    setSpotifyLink("");
-    setSelectedCategory("");
+    try {
+      // Extract spotify_id from URL if possible
+      const spotifyIdMatch = spotifyLink.match(/episode\/([a-zA-Z0-9]+)/);
+      const spotifyId = spotifyIdMatch ? spotifyIdMatch[1] : null;
 
-    toast({
-      title: "Épisode ajouté !",
-      description: "Les métadonnées ont été extraites automatiquement.",
-    });
+      const { data, error } = await supabase
+        .from("episodes")
+        .insert({
+          title: episodeTitle,
+          description: episodeDescription || null,
+          spotify_url: spotifyLink,
+          spotify_id: spotifyId,
+          category: selectedCategory || "Général",
+          published: false,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setEpisodes([data, ...episodes]);
+      setIsDialogOpen(false);
+      setSpotifyLink("");
+      setEpisodeTitle("");
+      setEpisodeDescription("");
+      setSelectedCategory("");
+
+      toast({
+        title: "Épisode ajouté !",
+        description: "L'épisode a été créé avec succès.",
+      });
+    } catch (error) {
+      console.error("Error adding episode:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter l'épisode",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const filteredEpisodes = mockEpisodes.filter((ep) =>
+  const handleTogglePublish = async (episode: Episode) => {
+    try {
+      const { error } = await supabase
+        .from("episodes")
+        .update({ published: !episode.published })
+        .eq("id", episode.id);
+
+      if (error) throw error;
+
+      setEpisodes(episodes.map(e => 
+        e.id === episode.id ? { ...e, published: !e.published } : e
+      ));
+
+      toast({
+        title: episode.published ? "Épisode dépublié" : "Épisode publié",
+      });
+    } catch (error) {
+      console.error("Error toggling publish:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier l'épisode",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("episodes")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setEpisodes(episodes.filter(e => e.id !== id));
+      toast({
+        title: "Épisode supprimé",
+        variant: "destructive",
+      });
+    } catch (error) {
+      console.error("Error deleting episode:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'épisode",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredEpisodes = episodes.filter((ep) =>
     ep.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isPageLoading) {
+    return (
+      <AdminLayout title="Épisodes" description="Gérez vos épisodes du podcast">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="Épisodes" description="Gérez vos épisodes du podcast">
@@ -136,9 +232,29 @@ export default function AdminEpisodes() {
           </DialogTrigger>
           <DialogContent className="bg-card border-border">
             <DialogHeader>
-              <DialogTitle>Ajouter un épisode Spotify</DialogTitle>
+              <DialogTitle>Ajouter un épisode</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
+              <div>
+                <Label htmlFor="episode-title">Titre de l'épisode</Label>
+                <Input
+                  id="episode-title"
+                  placeholder="Titre de l'épisode"
+                  value={episodeTitle}
+                  onChange={(e) => setEpisodeTitle(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="episode-description">Description (optionnel)</Label>
+                <Input
+                  id="episode-description"
+                  placeholder="Description de l'épisode"
+                  value={episodeDescription}
+                  onChange={(e) => setEpisodeDescription(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
               <div>
                 <Label htmlFor="spotify-link">Lien Spotify de l'épisode</Label>
                 <div className="relative mt-2">
@@ -151,9 +267,6 @@ export default function AdminEpisodes() {
                     className="pl-10"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Le titre, la description et l'image seront extraits automatiquement
-                </p>
               </div>
               <div>
                 <Label>Catégorie</Label>
@@ -178,8 +291,8 @@ export default function AdminEpisodes() {
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Extraction en cours...
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Ajout en cours...
                   </span>
                 ) : (
                   "Ajouter l'épisode"
@@ -197,18 +310,22 @@ export default function AdminEpisodes() {
             key={episode.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            transition={{ delay: index * 0.05 }}
           >
             <Card className="bg-card border-border hover:bg-accent/30 transition-colors">
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   {/* Thumbnail */}
-                  <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-accent">
-                    <img
-                      src={episode.image}
-                      alt={episode.title}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-accent flex items-center justify-center">
+                    {episode.image_url ? (
+                      <img
+                        src={episode.image_url}
+                        alt={episode.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Mic className="w-8 h-8 text-muted-foreground" />
+                    )}
                   </div>
 
                   {/* Info */}
@@ -219,7 +336,7 @@ export default function AdminEpisodes() {
                           {episode.title}
                         </h3>
                         <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                          {episode.description}
+                          {episode.description || "Aucune description"}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
@@ -239,31 +356,37 @@ export default function AdminEpisodes() {
                       <span className="text-xs text-muted-foreground bg-accent px-2 py-1 rounded">
                         {episode.category}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {episode.views} vues
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {episode.comments} commentaires
-                      </span>
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => window.open(episode.spotify_url, "_blank")}
+                    >
                       <Play className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleTogglePublish(episode)}
+                    >
                       {episode.published ? (
                         <EyeOff className="w-4 h-4" />
                       ) : (
                         <Eye className="w-4 h-4" />
                       )}
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={() => handleDelete(episode.id)}
+                    >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -276,6 +399,7 @@ export default function AdminEpisodes() {
 
       {filteredEpisodes.length === 0 && (
         <div className="text-center py-12">
+          <Mic className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground">Aucun épisode trouvé</p>
         </div>
       )}

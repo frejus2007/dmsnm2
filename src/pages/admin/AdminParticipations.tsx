@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -8,7 +8,7 @@ import {
   Mail,
   Clock,
   User,
-  MessageSquare,
+  Loader2,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -28,57 +28,55 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 
-const mockParticipations = [
-  {
-    id: "1",
-    name: "Marie",
-    email: "marie@example.com",
-    subject: "La reconstruction après une rupture",
-    reason: "J'ai traversé une rupture difficile il y a 6 mois et j'aimerais partager mon parcours de guérison pour aider d'autres personnes.",
-    anonymous: false,
-    status: "pending",
-    createdAt: "Il y a 2 heures",
-  },
-  {
-    id: "2",
-    name: null,
-    email: null,
-    subject: "Vivre avec l'anxiété sociale",
-    reason: "L'anxiété sociale a impacté ma vie professionnelle et personnelle. Je voudrais en parler pour briser le tabou.",
-    anonymous: true,
-    status: "pending",
-    createdAt: "Il y a 1 jour",
-  },
-  {
-    id: "3",
-    name: "Thomas",
-    email: "thomas@example.com",
-    subject: "Le burn-out parental",
-    reason: "En tant que père, j'ai vécu un burn-out parental. C'est un sujet peu abordé chez les hommes.",
-    anonymous: false,
-    status: "accepted",
-    createdAt: "Il y a 3 jours",
-  },
-  {
-    id: "4",
-    name: null,
-    email: null,
-    subject: "La phobie scolaire",
-    reason: "Ma fille a souffert de phobie scolaire. Je souhaite partager notre expérience.",
-    anonymous: true,
-    status: "rejected",
-    createdAt: "Il y a 5 jours",
-  },
-];
+interface Participation {
+  id: string;
+  name: string | null;
+  email: string | null;
+  subject: string;
+  reason: string;
+  anonymous: boolean;
+  status: string;
+  created_at: string;
+}
 
 export default function AdminParticipations() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [selectedParticipation, setSelectedParticipation] = useState<typeof mockParticipations[0] | null>(null);
+  const [selectedParticipation, setSelectedParticipation] = useState<Participation | null>(null);
+  const [participations, setParticipations] = useState<Participation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredParticipations = mockParticipations.filter((p) => {
+  useEffect(() => {
+    fetchParticipations();
+  }, []);
+
+  const fetchParticipations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("participation_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setParticipations(data || []);
+    } catch (error) {
+      console.error("Error fetching participations:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les demandes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredParticipations = participations.filter((p) => {
     const matchesSearch =
       p.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.reason.toLowerCase().includes(searchQuery.toLowerCase());
@@ -86,14 +84,52 @@ export default function AdminParticipations() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleAccept = (id: string) => {
-    toast({ title: "Demande acceptée" });
-    setSelectedParticipation(null);
+  const handleAccept = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("participation_requests")
+        .update({ status: "accepted" })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setParticipations(participations.map(p => 
+        p.id === id ? { ...p, status: "accepted" } : p
+      ));
+      toast({ title: "Demande acceptée" });
+      setSelectedParticipation(null);
+    } catch (error) {
+      console.error("Error accepting participation:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'accepter la demande",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleReject = (id: string) => {
-    toast({ title: "Demande refusée", variant: "destructive" });
-    setSelectedParticipation(null);
+  const handleReject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("participation_requests")
+        .update({ status: "rejected" })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setParticipations(participations.map(p => 
+        p.id === id ? { ...p, status: "rejected" } : p
+      ));
+      toast({ title: "Demande refusée", variant: "destructive" });
+      setSelectedParticipation(null);
+    } catch (error) {
+      console.error("Error rejecting participation:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de refuser la demande",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -121,6 +157,16 @@ export default function AdminParticipations() {
         return status;
     }
   };
+
+  if (isLoading) {
+    return (
+      <AdminLayout title="Participations" description="Gérez les demandes de participation au podcast">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="Participations" description="Gérez les demandes de participation au podcast">
@@ -152,10 +198,10 @@ export default function AdminParticipations() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total", count: mockParticipations.length, color: "text-foreground" },
-          { label: "En attente", count: mockParticipations.filter((p) => p.status === "pending").length, color: "text-yellow-500" },
-          { label: "Acceptés", count: mockParticipations.filter((p) => p.status === "accepted").length, color: "text-primary" },
-          { label: "Refusés", count: mockParticipations.filter((p) => p.status === "rejected").length, color: "text-destructive" },
+          { label: "Total", count: participations.length, color: "text-foreground" },
+          { label: "En attente", count: participations.filter((p) => p.status === "pending").length, color: "text-yellow-500" },
+          { label: "Acceptés", count: participations.filter((p) => p.status === "accepted").length, color: "text-primary" },
+          { label: "Refusés", count: participations.filter((p) => p.status === "rejected").length, color: "text-destructive" },
         ].map((stat) => (
           <Card key={stat.label} className="bg-card border-border">
             <CardContent className="p-4 text-center">
@@ -211,7 +257,7 @@ export default function AdminParticipations() {
                     <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {participation.createdAt}
+                        {formatDistanceToNow(new Date(participation.created_at), { addSuffix: true, locale: fr })}
                       </span>
                     </div>
                   </div>
