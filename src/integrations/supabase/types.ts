@@ -14,16 +14,224 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      comments: {
+        Row: {
+          content: string
+          created_at: string
+          episode_id: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          episode_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          episode_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      episodes: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          duration: string | null
+          id: string
+          image_url: string | null
+          published: boolean
+          spotify_id: string | null
+          spotify_url: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          image_url?: string | null
+          published?: boolean
+          spotify_id?: string | null
+          spotify_url: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          image_url?: string | null
+          published?: boolean
+          spotify_id?: string | null
+          spotify_url?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          created_at: string
+          episode_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          episode_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          episode_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      participation_requests: {
+        Row: {
+          anonymous: boolean
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          reason: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          anonymous?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          reason: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          anonymous?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          reason?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          gender: Database["public"]["Enums"]["gender_type"]
+          id: string
+          pseudo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          gender?: Database["public"]["Enums"]["gender_type"]
+          id: string
+          pseudo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          gender?: Database["public"]["Enums"]["gender_type"]
+          id?: string
+          pseudo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_pseudo: {
+        Args: { p_gender: Database["public"]["Enums"]["gender_type"] }
+        Returns: string
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      gender_type: "male" | "female" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +358,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      gender_type: ["male", "female", "other"],
+    },
   },
 } as const
