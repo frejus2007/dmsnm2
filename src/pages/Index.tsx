@@ -226,12 +226,12 @@ export default function Index() {
                 </motion.div>
               </div>
 
-              {/* Hero Image */}
+              {/* Hero Image - Now visible on all screens */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="relative hidden lg:block"
+                className="relative mt-8 lg:mt-0"
               >
                 <motion.div
                   variants={floatAnimation}
@@ -242,18 +242,18 @@ export default function Index() {
                   <img
                     src={heroImage}
                     alt="Des mots sur nos maux podcast"
-                    className="relative rounded-3xl shadow-2xl shadow-primary/10 w-full max-w-lg mx-auto"
+                    className="relative rounded-3xl shadow-2xl shadow-primary/10 w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto"
                   />
-                  {/* Decorative elements */}
+                  {/* Decorative elements - hidden on small screens */}
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute -top-4 -right-4 w-24 h-24 border-2 border-primary/20 rounded-full"
+                    className="absolute -top-4 -right-4 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 border-2 border-primary/20 rounded-full hidden sm:block"
                   />
                   <motion.div
                     animate={{ rotate: -360 }}
                     transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute -bottom-6 -left-6 w-32 h-32 border-2 border-primary/10 rounded-full"
+                    className="absolute -bottom-6 -left-6 w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32 border-2 border-primary/10 rounded-full hidden sm:block"
                   />
                 </motion.div>
               </motion.div>
