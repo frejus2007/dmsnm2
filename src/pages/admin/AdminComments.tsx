@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -7,7 +7,7 @@ import {
   Flag,
   Check,
   MessageSquare,
-  User,
+  Loader2,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -21,48 +21,75 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 
-const mockComments = [
-  {
-    id: "1",
-    pseudo: "WhisperingSoul_23",
-    content: "Cet épisode m'a vraiment touché. Merci pour ces mots réconfortants. 💚",
-    episode: "Apprendre à s'accepter",
-    createdAt: "Il y a 2 heures",
-    status: "approved",
-  },
-  {
-    id: "2",
-    pseudo: "SilentRiver_blue",
-    content: "Je ne savais pas que d'autres personnes ressentaient la même chose. Ça fait du bien.",
-    episode: "Gérer l'anxiété au quotidien",
-    createdAt: "Il y a 5 heures",
-    status: "pending",
-  },
-  {
-    id: "3",
-    pseudo: "NightBloom_xx",
-    content: "Les techniques partagées m'ont vraiment aidé à prendre du recul. Merci infiniment.",
-    episode: "Les relations toxiques",
-    createdAt: "Il y a 1 jour",
-    status: "approved",
-  },
-  {
-    id: "4",
-    pseudo: "CloudWalker_42",
-    content: "Spam content test",
-    episode: "Apprendre à s'accepter",
-    createdAt: "Il y a 2 jours",
-    status: "flagged",
-  },
-];
+interface Comment {
+  id: string;
+  content: string;
+  status: string;
+  created_at: string;
+  user_id: string;
+  episode_id: string;
+  pseudo: string;
+  episode_title: string;
+}
 
 export default function AdminComments() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredComments = mockComments.filter((comment) => {
+  useEffect(() => {
+    fetchComments();
+  }, []);
+
+  const fetchComments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("comments")
+        .select(`
+          id,
+          content,
+          status,
+          created_at,
+          user_id,
+          episode_id,
+          profiles:user_id (pseudo),
+          episodes:episode_id (title)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const formattedComments: Comment[] = (data || []).map((comment: any) => ({
+        id: comment.id,
+        content: comment.content,
+        status: comment.status,
+        created_at: comment.created_at,
+        user_id: comment.user_id,
+        episode_id: comment.episode_id,
+        pseudo: comment.profiles?.pseudo || "Utilisateur",
+        episode_title: comment.episodes?.title || "Épisode inconnu",
+      }));
+
+      setComments(formattedComments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les commentaires",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredComments = comments.filter((comment) => {
     const matchesSearch =
       comment.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
       comment.pseudo.toLowerCase().includes(searchQuery.toLowerCase());
@@ -70,12 +97,67 @@ export default function AdminComments() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleApprove = (id: string) => {
-    toast({ title: "Commentaire approuvé" });
+  const handleApprove = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .update({ status: "approved" })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setComments(comments.map(c => c.id === id ? { ...c, status: "approved" } : c));
+      toast({ title: "Commentaire approuvé" });
+    } catch (error) {
+      console.error("Error approving comment:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'approuver le commentaire",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDelete = (id: string) => {
-    toast({ title: "Commentaire supprimé", variant: "destructive" });
+  const handleFlag = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .update({ status: "flagged" })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setComments(comments.map(c => c.id === id ? { ...c, status: "flagged" } : c));
+      toast({ title: "Commentaire signalé" });
+    } catch (error) {
+      console.error("Error flagging comment:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de signaler le commentaire",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setComments(comments.filter(c => c.id !== id));
+      toast({ title: "Commentaire supprimé", variant: "destructive" });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le commentaire",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -103,6 +185,16 @@ export default function AdminComments() {
         return status;
     }
   };
+
+  if (isLoading) {
+    return (
+      <AdminLayout title="Commentaires" description="Modérez les commentaires de la communauté">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="Commentaires" description="Modérez les commentaires de la communauté">
@@ -134,10 +226,10 @@ export default function AdminComments() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total", count: mockComments.length, color: "text-foreground" },
-          { label: "En attente", count: mockComments.filter((c) => c.status === "pending").length, color: "text-yellow-500" },
-          { label: "Approuvés", count: mockComments.filter((c) => c.status === "approved").length, color: "text-primary" },
-          { label: "Signalés", count: mockComments.filter((c) => c.status === "flagged").length, color: "text-destructive" },
+          { label: "Total", count: comments.length, color: "text-foreground" },
+          { label: "En attente", count: comments.filter((c) => c.status === "pending").length, color: "text-yellow-500" },
+          { label: "Approuvés", count: comments.filter((c) => c.status === "approved").length, color: "text-primary" },
+          { label: "Signalés", count: comments.filter((c) => c.status === "flagged").length, color: "text-destructive" },
         ].map((stat) => (
           <Card key={stat.label} className="bg-card border-border">
             <CardContent className="p-4 text-center">
@@ -181,9 +273,11 @@ export default function AdminComments() {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <MessageSquare className="w-3 h-3" />
-                        {comment.episode}
+                        {comment.episode_title}
                       </span>
-                      <span>{comment.createdAt}</span>
+                      <span>
+                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: fr })}
+                      </span>
                     </div>
                   </div>
 
@@ -200,7 +294,12 @@ export default function AdminComments() {
                       </Button>
                     )}
                     {comment.status !== "flagged" && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-yellow-500">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-yellow-500"
+                        onClick={() => handleFlag(comment.id)}
+                      >
                         <Flag className="w-4 h-4" />
                       </Button>
                     )}
