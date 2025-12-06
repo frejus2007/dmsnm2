@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Filter, X } from "lucide-react";
+import { Search, Filter, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { EpisodeCard } from "@/components/EpisodeCard";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const categories = [
   "Tous",
@@ -16,100 +17,47 @@ const categories = [
   "Deuil",
   "Famille",
   "Travail",
+  "Général",
 ];
 
-const allEpisodes = [
-  {
-    id: "1",
-    title: "Apprendre à s'accepter : le chemin vers l'amour de soi",
-    description: "Dans cet épisode, nous explorons les étapes essentielles pour développer une relation saine avec soi-même et cultiver l'acceptation.",
-    image: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&auto=format&fit=crop",
-    duration: "45 min",
-    category: "Développement personnel",
-    spotifyUrl: "https://open.spotify.com/episode/example1",
-    commentCount: 24,
-  },
-  {
-    id: "2",
-    title: "Gérer l'anxiété au quotidien",
-    description: "Des techniques concrètes pour apprivoiser l'anxiété et retrouver un équilibre émotionnel.",
-    image: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&auto=format&fit=crop",
-    duration: "38 min",
-    category: "Santé mentale",
-    spotifyUrl: "https://open.spotify.com/episode/example2",
-    commentCount: 42,
-  },
-  {
-    id: "3",
-    title: "Les relations toxiques : comment s'en libérer",
-    description: "Identifier les signes d'une relation toxique et trouver le courage de s'en éloigner.",
-    image: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&auto=format&fit=crop",
-    duration: "52 min",
-    category: "Relations",
-    spotifyUrl: "https://open.spotify.com/episode/example3",
-    commentCount: 67,
-  },
-  {
-    id: "4",
-    title: "Surmonter le deuil : un pas à la fois",
-    description: "Accompagnement bienveillant pour traverser les étapes du deuil avec douceur.",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop",
-    duration: "48 min",
-    category: "Deuil",
-    spotifyUrl: "https://open.spotify.com/episode/example4",
-    commentCount: 35,
-  },
-  {
-    id: "5",
-    title: "La charge mentale : reconnaître et alléger",
-    description: "Comprendre ce qu'est la charge mentale et apprendre à mieux la gérer au quotidien.",
-    image: "https://images.unsplash.com/photo-1544027993-37dbfe43562a?w=800&auto=format&fit=crop",
-    duration: "41 min",
-    category: "Santé mentale",
-    spotifyUrl: "https://open.spotify.com/episode/example5",
-    commentCount: 58,
-  },
-  {
-    id: "6",
-    title: "Réconciliation familiale : est-ce toujours possible ?",
-    description: "Explorer les dynamiques familiales complexes et les chemins vers la réconciliation.",
-    image: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800&auto=format&fit=crop",
-    duration: "55 min",
-    category: "Famille",
-    spotifyUrl: "https://open.spotify.com/episode/example6",
-    commentCount: 29,
-  },
-  {
-    id: "7",
-    title: "Burn-out : reconnaître les signaux d'alerte",
-    description: "Apprendre à identifier les signes du burn-out avant qu'il ne soit trop tard.",
-    image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&auto=format&fit=crop",
-    duration: "43 min",
-    category: "Travail",
-    spotifyUrl: "https://open.spotify.com/episode/example7",
-    commentCount: 71,
-  },
-  {
-    id: "8",
-    title: "L'art de dire non sans culpabiliser",
-    description: "Poser ses limites avec bienveillance envers soi-même et les autres.",
-    image: "https://images.unsplash.com/photo-1489533119213-66a5cd877091?w=800&auto=format&fit=crop",
-    duration: "36 min",
-    category: "Développement personnel",
-    spotifyUrl: "https://open.spotify.com/episode/example8",
-    commentCount: 45,
-  },
-];
+interface Episode {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  duration: string | null;
+  category: string;
+  spotify_url: string;
+}
 
 export default function Episodes() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [showFilters, setShowFilters] = useState(false);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredEpisodes = allEpisodes.filter((episode) => {
+  useEffect(() => {
+    const fetchEpisodes = async () => {
+      const { data, error } = await supabase
+        .from("episodes")
+        .select("*")
+        .eq("published", true)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setEpisodes(data);
+      }
+      setIsLoading(false);
+    };
+
+    fetchEpisodes();
+  }, []);
+
+  const filteredEpisodes = episodes.filter((episode) => {
     const matchesSearch =
       episode.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      episode.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (episode.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
     const matchesCategory =
       selectedCategory === "Tous" || episode.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -210,10 +158,27 @@ export default function Episodes() {
           </motion.p>
 
           {/* Episodes Grid */}
-          {filteredEpisodes.length > 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : filteredEpisodes.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredEpisodes.map((episode, index) => (
-                <EpisodeCard key={episode.id} episode={episode} index={index} />
+                <EpisodeCard
+                  key={episode.id}
+                  episode={{
+                    id: episode.id,
+                    title: episode.title,
+                    description: episode.description || "",
+                    image: episode.image_url || "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800",
+                    duration: episode.duration || "N/A",
+                    category: episode.category,
+                    spotifyUrl: episode.spotify_url,
+                    commentCount: 0,
+                  }}
+                  index={index}
+                />
               ))}
             </div>
           ) : (
