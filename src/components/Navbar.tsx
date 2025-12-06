@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Leaf, Heart, Mic, User, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { path: "/", label: "Accueil", icon: Home },
@@ -14,6 +15,7 @@ const navItems = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user, profile, isLoading } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border">
@@ -60,18 +62,33 @@ export function Navbar() {
           })}
         </div>
 
-        {/* Auth Buttons - Admin button removed */}
+        {/* Auth Buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/auth">
-            <Button variant="outline" size="sm" className="transition-all duration-300 hover:scale-105">
-              Connexion
-            </Button>
-          </Link>
-          <Link to="/auth?mode=signup">
-            <Button variant="spotify" size="sm" className="transition-all duration-300 hover:scale-105">
-              S'inscrire
-            </Button>
-          </Link>
+          {!isLoading && (
+            <>
+              {user ? (
+                <Link to="/profil">
+                  <Button variant="outline" size="sm" className="transition-all duration-300 hover:scale-105">
+                    <User className="w-4 h-4 mr-2" />
+                    {profile?.pseudo || "Profil"}
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/auth">
+                    <Button variant="outline" size="sm" className="transition-all duration-300 hover:scale-105">
+                      Connexion
+                    </Button>
+                  </Link>
+                  <Link to="/auth?mode=signup">
+                    <Button variant="spotify" size="sm" className="transition-all duration-300 hover:scale-105">
+                      S'inscrire
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -128,17 +145,32 @@ export function Navbar() {
                 transition={{ delay: 0.3 }}
                 className="border-t border-border my-2 pt-4 space-y-2"
               >
-                <Link to="/auth" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full">
-                    <User className="w-4 h-4 mr-2" />
-                    Connexion
-                  </Button>
-                </Link>
-                <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
-                  <Button variant="spotify" className="w-full">
-                    S'inscrire
-                  </Button>
-                </Link>
+                {!isLoading && (
+                  <>
+                    {user ? (
+                      <Link to="/profil" onClick={() => setIsOpen(false)}>
+                        <Button variant="outline" className="w-full">
+                          <User className="w-4 h-4 mr-2" />
+                          {profile?.pseudo || "Profil"}
+                        </Button>
+                      </Link>
+                    ) : (
+                      <>
+                        <Link to="/auth" onClick={() => setIsOpen(false)}>
+                          <Button variant="outline" className="w-full">
+                            <User className="w-4 h-4 mr-2" />
+                            Connexion
+                          </Button>
+                        </Link>
+                        <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
+                          <Button variant="spotify" className="w-full">
+                            S'inscrire
+                          </Button>
+                        </Link>
+                      </>
+                    )}
+                  </>
+                )}
               </motion.div>
             </div>
           </motion.div>

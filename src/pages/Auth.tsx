@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Leaf, ArrowRight, Shield, Heart } from "lucide-react";
@@ -7,11 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { z } from "zod";
+
+const emailSchema = z.string().email("Email invalide").max(255, "Email trop long");
+const passwordSchema = z.string().min(6, "Minimum 6 caractères").max(100, "Mot de passe trop long");
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, signUp, signIn, isLoading: authLoading } = useAuth();
   
   const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,43 +28,109 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "other">("other");
+  const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate("/");
+    }
+  }, [user, authLoading, navigate]);
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+
+    try {
+      emailSchema.parse(email);
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        newErrors.email = e.errors[0].message;
+      }
+    }
+
+    try {
+      passwordSchema.parse(password);
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        newErrors.password = e.errors[0].message;
+      }
+    }
+
+    if (!isLogin && password !== confirmPassword) {
+      newErrors.confirm = "Les mots de passe ne correspondent pas";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
-      toast({
-        title: "Champs requis",
-        description: "Veuillez remplir tous les champs.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!isLogin && password !== confirmPassword) {
-      toast({
-        title: "Erreur",
-        description: "Les mots de passe ne correspondent pas.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    toast({
-      title: isLogin ? "Connexion réussie" : "Inscription réussie",
-      description: isLogin
-        ? "Bienvenue dans votre safe space !"
-        : "Votre pseudo anonyme a été généré. Bienvenue !",
-    });
-
-    setIsLoading(false);
-    navigate("/");
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          let message = "Une erreur est survenue";
+          if (error.message.includes("Invalid login")) {
+            message = "Email ou mot de passe incorrect";
+          } else if (error.message.includes("Email not confirmed")) {
+            message = "Veuillez confirmer votre email";
+          }
+          toast({
+            title: "Erreur de connexion",
+            description: message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Connexion réussie",
+            description: "Bienvenue dans votre safe space !",
+          });
+          navigate("/");
+        }
+      } else {
+        const { error } = await signUp(email, password, gender);
+        if (error) {
+          let message = "Une erreur est survenue";
+          if (error.message.includes("already registered")) {
+            message = "Cet email est déjà utilisé";
+          }
+          toast({
+            title: "Erreur d'inscription",
+            description: message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Inscription réussie !",
+            description: "Votre pseudo anonyme a été généré. Bienvenue !",
+          });
+          navigate("/");
+        }
+      }
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur inattendue est survenue",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -71,13 +143,13 @@ export default function Auth() {
         >
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-hope to-hope-deep flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-lg">Des mots sur nos maux</span>
+            <span className="font-bold text-lg text-foreground">Des mots sur nos maux</span>
           </Link>
 
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-foreground">
             {isLogin ? "Bon retour parmi nous" : "Rejoignez le safe space"}
           </h1>
           <p className="text-muted-foreground mb-8">
@@ -97,6 +169,9 @@ export default function Auth() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-2 h-12"
               />
+              {errors.email && (
+                <p className="text-destructive text-sm mt-1">{errors.email}</p>
+              )}
             </div>
 
             <div>
@@ -122,6 +197,9 @@ export default function Auth() {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-destructive text-sm mt-1">{errors.password}</p>
+              )}
             </div>
 
             {!isLogin && (
@@ -136,6 +214,9 @@ export default function Auth() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="mt-2 h-12"
                   />
+                  {errors.confirm && (
+                    <p className="text-destructive text-sm mt-1">{errors.confirm}</p>
+                  )}
                 </div>
 
                 <div>
@@ -161,12 +242,12 @@ export default function Auth() {
                 </div>
 
                 <div className="bg-muted/50 rounded-xl p-4 flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-hope mt-0.5" />
+                  <Shield className="w-5 h-5 text-primary mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium mb-1">Anonymat garanti</p>
+                    <p className="font-medium mb-1 text-foreground">Anonymat garanti</p>
                     <p className="text-muted-foreground">
                       Un pseudo unique sera généré automatiquement pour protéger
-                      votre identité. Exemple : <span className="font-mono text-hope">WhisperingSoul_23</span>
+                      votre identité. Exemple : <span className="font-mono text-primary">WhisperingSoul_23</span>
                     </p>
                   </div>
                 </div>
@@ -207,7 +288,7 @@ export default function Auth() {
       </div>
 
       {/* Right Panel - Visual */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-hope to-hope-deep p-12 items-center justify-center">
+      <div className="hidden lg:flex flex-1 bg-primary p-12 items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
