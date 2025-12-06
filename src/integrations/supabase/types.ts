@@ -161,6 +161,7 @@ export type Database = {
           reason: string
           status: string
           subject: string
+          whatsapp: string | null
         }
         Insert: {
           anonymous?: boolean
@@ -171,6 +172,7 @@ export type Database = {
           reason: string
           status?: string
           subject: string
+          whatsapp?: string | null
         }
         Update: {
           anonymous?: boolean
@@ -181,6 +183,7 @@ export type Database = {
           reason?: string
           status?: string
           subject?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }

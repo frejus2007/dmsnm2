@@ -9,6 +9,7 @@ import {
   Clock,
   User,
   Loader2,
+  Phone,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ interface Participation {
   id: string;
   name: string | null;
   email: string | null;
+  whatsapp: string | null;
   subject: string;
   reason: string;
   anonymous: boolean;
@@ -321,6 +323,15 @@ export default function AdminParticipations() {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Email</p>
                   <p>{selectedParticipation.email}</p>
+                </div>
+              )}
+              {selectedParticipation.whatsapp && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">WhatsApp</p>
+                  <p className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-primary" />
+                    {selectedParticipation.whatsapp}
+                  </p>
                 </div>
               )}
               <div>
