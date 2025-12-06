@@ -9,6 +9,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const participationSchema = z.object({
+  name: z.string().max(100, "Le nom ne peut pas dépasser 100 caractères").optional(),
+  email: z.string().email("Email invalide").max(255, "Email trop long").optional().or(z.literal("")),
+  subject: z.string().min(3, "Le sujet doit faire au moins 3 caractères").max(200, "Le sujet ne peut pas dépasser 200 caractères"),
+  reason: z.string().min(10, "Veuillez détailler votre motivation (au moins 10 caractères)").max(2000, "La motivation ne peut pas dépasser 2000 caractères"),
+});
 
 export default function Participer() {
   const { toast } = useToast();
@@ -26,17 +35,45 @@ export default function Participer() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.subject || !formData.reason) {
+    // Validate form data
+    const validation = participationSchema.safeParse({
+      name: isAnonymous ? undefined : formData.name || undefined,
+      email: isAnonymous ? undefined : formData.email || undefined,
+      subject: formData.subject,
+      reason: formData.reason,
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
       toast({
-        title: "Champs requis",
-        description: "Veuillez remplir au moins le sujet et votre motivation.",
+        title: "Erreur de validation",
+        description: firstError.message,
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    const { error } = await supabase.from("participation_requests").insert({
+      name: isAnonymous ? null : formData.name || null,
+      email: isAnonymous ? null : formData.email || null,
+      subject: formData.subject,
+      reason: formData.reason,
+      anonymous: isAnonymous,
+      status: "pending",
+    });
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer votre demande. Veuillez réessayer.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(false);
     setIsSubmitted(true);
   };
@@ -51,9 +88,14 @@ export default function Participer() {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center max-w-md mx-auto px-4"
           >
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-hope/20 flex items-center justify-center">
-              <CheckCircle2 className="w-10 h-10 text-hope" />
-            </div>
+            <motion.div 
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", delay: 0.2 }}
+              className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/20 flex items-center justify-center"
+            >
+              <CheckCircle2 className="w-10 h-10 text-primary" />
+            </motion.div>
             <h1 className="text-2xl font-bold mb-4">
               Merci pour votre participation !
             </h1>
@@ -61,7 +103,10 @@ export default function Participer() {
               Votre demande a bien été envoyée. Nous reviendrons vers vous très
               prochainement pour discuter de votre participation.
             </p>
-            <Button variant="spotify" onClick={() => setIsSubmitted(false)}>
+            <Button variant="spotify" onClick={() => {
+              setIsSubmitted(false);
+              setFormData({ name: "", email: "", subject: "", reason: "" });
+            }}>
               Envoyer une autre demande
             </Button>
           </motion.div>
@@ -84,10 +129,18 @@ export default function Participer() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center mb-12"
             >
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-sm font-medium mb-4">
-                <Heart className="w-4 h-4 text-hope" />
+              <motion.span 
+                className="inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-sm font-medium mb-4"
+                whileHover={{ scale: 1.05 }}
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Heart className="w-4 h-4 text-primary" />
+                </motion.div>
                 Votre voix compte
-              </span>
+              </motion.span>
               <h1 className="text-3xl md:text-4xl font-bold mb-4">
                 Participez au podcast
               </h1>
@@ -124,7 +177,12 @@ export default function Participer() {
                 </div>
 
                 {!isAnonymous && (
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="grid md:grid-cols-2 gap-6"
+                  >
                     <div>
                       <Label htmlFor="name">Nom ou prénom (facultatif)</Label>
                       <Input
@@ -135,6 +193,7 @@ export default function Participer() {
                           setFormData({ ...formData, name: e.target.value })
                         }
                         className="mt-2"
+                        maxLength={100}
                       />
                     </div>
                     <div>
@@ -148,9 +207,10 @@ export default function Participer() {
                           setFormData({ ...formData, email: e.target.value })
                         }
                         className="mt-2"
+                        maxLength={255}
                       />
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
                 <div>
@@ -165,6 +225,8 @@ export default function Participer() {
                       setFormData({ ...formData, subject: e.target.value })
                     }
                     className="mt-2"
+                    maxLength={200}
+                    required
                   />
                 </div>
 
@@ -180,14 +242,19 @@ export default function Participer() {
                       setFormData({ ...formData, reason: e.target.value })
                     }
                     className="mt-2 min-h-[150px]"
+                    maxLength={2000}
+                    required
                   />
                 </div>
 
                 {/* Privacy notice */}
-                <div className="flex items-start gap-3 p-4 bg-hope/10 rounded-xl">
-                  <Shield className="w-5 h-5 text-hope mt-0.5 flex-shrink-0" />
+                <motion.div 
+                  className="flex items-start gap-3 p-4 bg-primary/10 rounded-xl"
+                  whileHover={{ scale: 1.01 }}
+                >
+                  <Shield className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
-                    <p className="font-medium mb-1 text-hope">
+                    <p className="font-medium mb-1 text-primary">
                       Nous garantissons votre anonymat
                     </p>
                     <p className="text-muted-foreground">
@@ -196,7 +263,7 @@ export default function Participer() {
                       avec votre voix modifiée si vous le souhaitez.
                     </p>
                   </div>
-                </div>
+                </motion.div>
 
                 <Button
                   type="submit"
@@ -245,13 +312,17 @@ export default function Participer() {
                     a: "Absolument. Vous avez un droit de regard total sur votre épisode et pouvez demander à ce qu'il ne soit pas publié.",
                   },
                 ].map((faq, i) => (
-                  <div
+                  <motion.div
                     key={i}
-                    className="bg-card rounded-xl p-5 border border-border"
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="bg-card rounded-xl p-5 border border-border hover:border-primary/30 transition-colors"
                   >
                     <h3 className="font-medium mb-2">{faq.q}</h3>
                     <p className="text-sm text-muted-foreground">{faq.a}</p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </motion.div>

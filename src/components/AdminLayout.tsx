@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -11,10 +11,12 @@ import {
   Menu,
   X,
   ChevronRight,
-  Leaf,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import logoImage from "@/assets/logo-dmsnm.jpeg";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -34,6 +36,32 @@ export function AdminLayout({ children, title, description }: AdminLayoutProps) 
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, isAdmin, isLoading, signOut } = useAuth();
+
+  // Redirect if not authenticated or not admin
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Vérification des droits d'accès...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -56,9 +84,11 @@ export function AdminLayout({ children, title, description }: AdminLayoutProps) 
           {/* Logo */}
           <div className="p-6 border-b border-border">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-primary-foreground" />
-              </div>
+              <img 
+                src={logoImage} 
+                alt="Logo" 
+                className="w-10 h-10 rounded-full object-cover"
+              />
               <div>
                 <span className="font-bold block text-foreground">Admin</span>
                 <span className="text-xs text-muted-foreground">Des mots sur nos maux</span>
@@ -90,7 +120,7 @@ export function AdminLayout({ children, title, description }: AdminLayoutProps) 
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-2">
             <Button
               variant="ghost"
               className="w-full justify-start text-muted-foreground hover:text-foreground"
@@ -98,6 +128,14 @@ export function AdminLayout({ children, title, description }: AdminLayoutProps) 
             >
               <LogOut className="w-5 h-5 mr-3" />
               Retour au site
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-5 h-5 mr-3" />
+              Déconnexion
             </Button>
           </div>
         </div>

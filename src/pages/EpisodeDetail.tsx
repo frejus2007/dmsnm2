@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -10,68 +10,196 @@ import {
   Calendar,
   Send,
   User,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock episode data
-const episodeData = {
-  id: "1",
-  title: "Apprendre à s'accepter : le chemin vers l'amour de soi",
-  description:
-    "Dans cet épisode profond et bienveillant, nous explorons les étapes essentielles pour développer une relation saine avec soi-même et cultiver l'acceptation. Nous abordons les obstacles courants, les croyances limitantes et partageons des outils concrets pour commencer ce chemin de guérison.",
-  image:
-    "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&auto=format&fit=crop",
-  duration: "45 min",
-  category: "Développement personnel",
-  spotifyId: "4rOoJ6Egrf8K2IrywzwOMk",
-  publishedAt: "15 novembre 2024",
-  commentCount: 24,
-};
+interface Episode {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  duration: string | null;
+  category: string;
+  spotify_url: string;
+  spotify_id: string | null;
+  created_at: string;
+}
 
-// Mock comments
-const mockComments = [
-  {
-    id: "1",
-    pseudo: "WhisperingSoul_23",
-    content:
-      "Cet épisode m'a vraiment touché. Merci pour ces mots réconfortants. 💚",
-    createdAt: "Il y a 2 jours",
-    likes: 12,
-  },
-  {
-    id: "2",
-    pseudo: "SilentRiver_blue",
-    content:
-      "Je ne savais pas que d'autres personnes ressentaient la même chose que moi. Ça fait du bien de ne pas se sentir seul.",
-    createdAt: "Il y a 3 jours",
-    likes: 8,
-  },
-  {
-    id: "3",
-    pseudo: "NightBloom_xx",
-    content:
-      "Les techniques partagées dans cet épisode m'ont vraiment aidé à prendre du recul sur ma situation. Merci infiniment.",
-    createdAt: "Il y a 5 jours",
-    likes: 15,
-  },
-];
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  profiles: {
+    pseudo: string;
+  } | null;
+}
 
 export default function EpisodeDetail() {
   const { id } = useParams();
+  const { user, profile } = useAuth();
+  const { toast } = useToast();
+  const [episode, setEpisode] = useState<Episode | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [comment, setComment] = useState("");
-  const [isLoggedIn] = useState(false); // Mock auth state
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmitComment = () => {
-    if (!comment.trim()) return;
-    // Handle comment submission
-    console.log("Comment submitted:", comment);
-    setComment("");
+  useEffect(() => {
+    const fetchEpisode = async () => {
+      if (!id) return;
+
+      const { data: episodeData, error: episodeError } = await supabase
+        .from("episodes")
+        .select("*")
+        .eq("id", id)
+        .eq("published", true)
+        .single();
+
+      if (!episodeError && episodeData) {
+        setEpisode(episodeData);
+      }
+
+      // Fetch approved comments
+      const { data: commentsData } = await supabase
+        .from("comments")
+        .select(`
+          id,
+          content,
+          created_at,
+          profiles:user_id (pseudo)
+        `)
+        .eq("episode_id", id)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+
+      if (commentsData) {
+        setComments(commentsData as Comment[]);
+      }
+
+      // Check if episode is in favorites
+      if (user) {
+        const { data: favoriteData } = await supabase
+          .from("favorites")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("episode_id", id)
+          .single();
+
+        setIsFavorite(!!favoriteData);
+      }
+
+      setIsLoading(false);
+    };
+
+    fetchEpisode();
+  }, [id, user]);
+
+  const handleToggleFavorite = async () => {
+    if (!user || !id) {
+      toast({
+        title: "Connexion requise",
+        description: "Connectez-vous pour ajouter aux favoris",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isFavorite) {
+      await supabase
+        .from("favorites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("episode_id", id);
+      setIsFavorite(false);
+      toast({ title: "Retiré des favoris" });
+    } else {
+      await supabase
+        .from("favorites")
+        .insert({ user_id: user.id, episode_id: id });
+      setIsFavorite(true);
+      toast({ title: "Ajouté aux favoris" });
+    }
   };
+
+  const handleSubmitComment = async () => {
+    if (!comment.trim() || !user || !id) return;
+
+    setIsSubmitting(true);
+    const { error } = await supabase.from("comments").insert({
+      user_id: user.id,
+      episode_id: id,
+      content: comment.trim(),
+      status: "pending",
+    });
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer le commentaire",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Commentaire envoyé",
+        description: "Votre commentaire sera visible après modération",
+      });
+      setComment("");
+    }
+    setIsSubmitting(false);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const getSpotifyEmbedId = () => {
+    if (episode?.spotify_id) return episode.spotify_id;
+    // Extract ID from URL if spotify_id is not available
+    const match = episode?.spotify_url.match(/episode\/([a-zA-Z0-9]+)/);
+    return match ? match[1] : null;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 pt-24 pb-16 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!episode) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 pt-24 pb-16 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Épisode non trouvé</h1>
+            <Link to="/episodes">
+              <Button>Retour aux épisodes</Button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -104,61 +232,67 @@ export default function EpisodeDetail() {
               >
                 <div className="relative aspect-video rounded-2xl overflow-hidden mb-6">
                   <img
-                    src={episodeData.image}
-                    alt={episodeData.title}
+                    src={episode.image_url || "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800"}
+                    alt={episode.title}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
-                  <span className="absolute bottom-4 left-4 px-3 py-1 bg-lavender/90 backdrop-blur-sm rounded-full text-sm font-medium">
-                    {episodeData.category}
+                  <span className="absolute bottom-4 left-4 px-3 py-1 bg-primary/90 backdrop-blur-sm rounded-full text-sm font-medium text-primary-foreground">
+                    {episode.category}
                   </span>
                 </div>
 
                 <h1 className="text-2xl md:text-3xl font-bold mb-4">
-                  {episodeData.title}
+                  {episode.title}
                 </h1>
 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {episodeData.duration}
-                  </div>
+                  {episode.duration && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {episode.duration}
+                    </div>
+                  )}
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    {episodeData.publishedAt}
+                    {formatDate(episode.created_at)}
                   </div>
                   <div className="flex items-center gap-1">
                     <MessageCircle className="w-4 h-4" />
-                    {episodeData.commentCount} commentaires
+                    {comments.length} commentaire{comments.length > 1 ? "s" : ""}
                   </div>
                 </div>
 
-                <p className="text-muted-foreground leading-relaxed">
-                  {episodeData.description}
-                </p>
+                {episode.description && (
+                  <p className="text-muted-foreground leading-relaxed">
+                    {episode.description}
+                  </p>
+                )}
               </motion.div>
 
               {/* Spotify Player */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mb-8"
-              >
-                <h2 className="text-lg font-semibold mb-4">Écouter l'épisode</h2>
-                <div className="rounded-2xl overflow-hidden">
-                  <iframe
-                    style={{ borderRadius: "12px" }}
-                    src={`https://open.spotify.com/embed/episode/${episodeData.spotifyId}?utm_source=generator&theme=0`}
-                    width="100%"
-                    height="232"
-                    frameBorder="0"
-                    allowFullScreen
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    loading="lazy"
-                  />
-                </div>
-              </motion.div>
+              {getSpotifyEmbedId() && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="mb-8"
+                >
+                  <h2 className="text-lg font-semibold mb-4">Écouter l'épisode</h2>
+                  <div className="rounded-2xl overflow-hidden">
+                    <iframe
+                      style={{ borderRadius: "12px" }}
+                      src={`https://open.spotify.com/embed/episode/${getSpotifyEmbedId()}?utm_source=generator&theme=0`}
+                      width="100%"
+                      height="232"
+                      frameBorder="0"
+                      allowFullScreen
+                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                      loading="lazy"
+                    />
+                  </div>
+                </motion.div>
+              )}
 
               {/* Actions */}
               <motion.div
@@ -169,7 +303,7 @@ export default function EpisodeDetail() {
               >
                 <Button
                   variant={isFavorite ? "spotify" : "outline"}
-                  onClick={() => setIsFavorite(!isFavorite)}
+                  onClick={handleToggleFavorite}
                 >
                   <Heart
                     className={cn("w-4 h-4 mr-2", isFavorite && "fill-current")}
@@ -194,7 +328,7 @@ export default function EpisodeDetail() {
 
                 {/* Comment Form */}
                 <div className="bg-card rounded-2xl p-6 border border-border mb-6">
-                  {isLoggedIn ? (
+                  {user ? (
                     <div>
                       <Textarea
                         placeholder="Partagez votre ressenti en toute confidentialité..."
@@ -204,10 +338,14 @@ export default function EpisodeDetail() {
                       />
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-muted-foreground">
-                          Votre commentaire sera signé avec votre pseudo anonyme
+                          Votre commentaire sera signé : {profile?.pseudo}
                         </p>
-                        <Button onClick={handleSubmitComment}>
-                          <Send className="w-4 h-4 mr-2" />
+                        <Button onClick={handleSubmitComment} disabled={isSubmitting || !comment.trim()}>
+                          {isSubmitting ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4 mr-2" />
+                          )}
                           Envoyer
                         </Button>
                       </div>
@@ -227,42 +365,44 @@ export default function EpisodeDetail() {
 
                 {/* Comments List */}
                 <div className="space-y-4">
-                  {mockComments.map((commentItem, index) => (
-                    <motion.div
-                      key={commentItem.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                      className="bg-card rounded-xl p-5 border border-border"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-hope to-lavender flex items-center justify-center">
-                            <span className="text-sm font-semibold text-primary-foreground">
-                              {commentItem.pseudo.charAt(0)}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {commentItem.pseudo}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {commentItem.createdAt}
-                            </p>
+                  {comments.length > 0 ? (
+                    comments.map((commentItem, index) => (
+                      <motion.div
+                        key={commentItem.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 + index * 0.1 }}
+                        className="bg-card rounded-xl p-5 border border-border"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center">
+                              <span className="text-sm font-semibold text-primary-foreground">
+                                {commentItem.profiles?.pseudo?.charAt(0) || "?"}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {commentItem.profiles?.pseudo || "Anonyme"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatDate(commentItem.created_at)}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <p className="text-sm leading-relaxed">
-                        {commentItem.content}
-                      </p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <button className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-                          <Heart className="w-4 h-4" />
-                          <span className="text-xs">{commentItem.likes}</span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                        <p className="text-sm leading-relaxed">
+                          {commentItem.content}
+                        </p>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>Aucun commentaire pour le moment</p>
+                      <p className="text-sm">Soyez le premier à partager votre ressenti</p>
+                    </div>
+                  )}
                 </div>
               </motion.section>
             </div>
@@ -276,41 +416,16 @@ export default function EpisodeDetail() {
                 className="sticky top-24"
               >
                 <div className="bg-card rounded-2xl p-6 border border-border">
-                  <h3 className="font-semibold mb-4">Épisodes similaires</h3>
-                  <div className="space-y-4">
-                    {[
-                      {
-                        title: "Gérer l'anxiété au quotidien",
-                        duration: "38 min",
-                      },
-                      {
-                        title: "L'art de dire non sans culpabiliser",
-                        duration: "36 min",
-                      },
-                      {
-                        title: "La charge mentale : reconnaître et alléger",
-                        duration: "41 min",
-                      },
-                    ].map((ep, i) => (
-                      <Link
-                        key={i}
-                        to={`/episode/${i + 2}`}
-                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors"
-                      >
-                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                          <MessageCircle className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium line-clamp-1">
-                            {ep.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {ep.duration}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                  <h3 className="font-semibold mb-4">Écouter sur Spotify</h3>
+                  <a
+                    href={episode.spotify_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="spotify" className="w-full">
+                      Ouvrir sur Spotify
+                    </Button>
+                  </a>
                 </div>
               </motion.div>
             </aside>
