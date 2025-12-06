@@ -54,6 +54,13 @@ export type Database = {
             foreignKeyName: "comments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profile_pseudos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -126,6 +133,13 @@ export type Database = {
             columns: ["episode_id"]
             isOneToOne: false
             referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_pseudos"
             referencedColumns: ["id"]
           },
           {
@@ -214,7 +228,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profile_pseudos: {
+        Row: {
+          id: string | null
+          pseudo: string | null
+        }
+        Insert: {
+          id?: string | null
+          pseudo?: string | null
+        }
+        Update: {
+          id?: string | null
+          pseudo?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_pseudo: {
