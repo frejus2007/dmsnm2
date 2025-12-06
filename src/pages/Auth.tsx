@@ -30,12 +30,15 @@ export default function Auth() {
   const [gender, setGender] = useState<"male" | "female" | "other">("other");
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
 
+  // Get redirect URL from query params
+  const redirectTo = searchParams.get("redirect") || "/";
+
   // Redirect if already logged in
   useEffect(() => {
     if (user && !authLoading) {
-      navigate("/");
+      navigate(redirectTo);
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, redirectTo]);
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -91,7 +94,7 @@ export default function Auth() {
             title: "Connexion réussie",
             description: "Bienvenue dans votre safe space !",
           });
-          navigate("/");
+          navigate(redirectTo);
         }
       } else {
         const { error } = await signUp(email, password, gender);
@@ -110,7 +113,7 @@ export default function Auth() {
             title: "Inscription réussie !",
             description: "Votre pseudo anonyme a été généré. Bienvenue !",
           });
-          navigate("/");
+          navigate(redirectTo);
         }
       }
     } catch (err) {

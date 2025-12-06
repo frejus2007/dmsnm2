@@ -51,7 +51,7 @@ export function AdminLayout({ children, title, description }: AdminLayoutProps) 
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to={`/auth?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   if (!isAdmin) {
