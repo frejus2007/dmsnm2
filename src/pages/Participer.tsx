@@ -15,6 +15,7 @@ import { z } from "zod";
 const participationSchema = z.object({
   name: z.string().max(100, "Le nom ne peut pas dépasser 100 caractères").optional(),
   email: z.string().email("Email invalide").max(255, "Email trop long").optional().or(z.literal("")),
+  whatsapp: z.string().max(20, "Numéro trop long").optional().or(z.literal("")),
   subject: z.string().min(3, "Le sujet doit faire au moins 3 caractères").max(200, "Le sujet ne peut pas dépasser 200 caractères"),
   reason: z.string().min(10, "Veuillez détailler votre motivation (au moins 10 caractères)").max(2000, "La motivation ne peut pas dépasser 2000 caractères"),
 });
@@ -28,6 +29,7 @@ export default function Participer() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    whatsapp: "",
     subject: "",
     reason: "",
   });
@@ -39,6 +41,7 @@ export default function Participer() {
     const validation = participationSchema.safeParse({
       name: isAnonymous ? undefined : formData.name || undefined,
       email: isAnonymous ? undefined : formData.email || undefined,
+      whatsapp: isAnonymous ? undefined : formData.whatsapp || undefined,
       subject: formData.subject,
       reason: formData.reason,
     });
@@ -58,6 +61,7 @@ export default function Participer() {
     const { error } = await supabase.from("participation_requests").insert({
       name: isAnonymous ? null : formData.name || null,
       email: isAnonymous ? null : formData.email || null,
+      whatsapp: isAnonymous ? null : formData.whatsapp || null,
       subject: formData.subject,
       reason: formData.reason,
       anonymous: isAnonymous,
@@ -105,7 +109,7 @@ export default function Participer() {
             </p>
             <Button variant="spotify" onClick={() => {
               setIsSubmitted(false);
-              setFormData({ name: "", email: "", subject: "", reason: "" });
+              setFormData({ name: "", email: "", whatsapp: "", subject: "", reason: "" });
             }}>
               Envoyer une autre demande
             </Button>
@@ -208,6 +212,20 @@ export default function Participer() {
                         }
                         className="mt-2"
                         maxLength={255}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="whatsapp">WhatsApp (facultatif)</Label>
+                      <Input
+                        id="whatsapp"
+                        type="tel"
+                        placeholder="+33 6 12 34 56 78"
+                        value={formData.whatsapp}
+                        onChange={(e) =>
+                          setFormData({ ...formData, whatsapp: e.target.value })
+                        }
+                        className="mt-2"
+                        maxLength={20}
                       />
                     </div>
                   </motion.div>
