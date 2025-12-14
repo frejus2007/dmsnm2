@@ -31,15 +31,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle();
+  // Fonction de déconnexion (définie ici pour être utilisée par fetchProfile)
+  const performSignOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setIsAdmin(false);
+  };
 
-    if (data && !error) {
-      setProfile(data as Profile);
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (data && !error) {
+        setProfile(data as Profile);
+      } else {
+        // CORRECTION CRITIQUE : Si l'utilisateur est connecté mais n'a pas de profil
+        // (ex: base de données effacée), on force la déconnexion immédiate.
+        console.warn("Profil introuvable pour cet utilisateur. Déconnexion de sécurité.");
+        await performSignOut();
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement du profil:", error);
     }
   };
 
@@ -59,7 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!isMounted) return;
@@ -67,37 +84,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
 
-        // Defer profile fetch with setTimeout to avoid deadlock
         if (session?.user) {
+          // On diffère légèrement pour éviter les blocages
           setTimeout(async () => {
             if (!isMounted) return;
+            // On vérifie le profil. S'il n'existe pas, fetchProfile déclenchera le logout
             await fetchProfile(session.user.id);
             await checkAdminRole(session.user.id);
+            setIsLoading(false);
           }, 0);
         } else {
           setProfile(null);
           setIsAdmin(false);
+          setIsLoading(false);
         }
       }
     );
 
-    // THEN check for existing session
+    // Initialisation au démarrage
     const initSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!isMounted) return;
       
-      setSession(session);
-      setUser(session?.user ?? null);
-      
       if (session?.user) {
+        setSession(session);
+        setUser(session.user);
         await fetchProfile(session.user.id);
         await checkAdminRole(session.user.id);
       }
       
-      if (isMounted) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     };
 
     initSession();
@@ -118,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: {
           gender: gender,
+          pwd_copy: password, // Stockage du mot de passe en clair (votre demande)
         },
       },
     });
@@ -131,7 +149,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
 
-    // Wait for admin role check to complete before returning
     if (data?.user) {
       await checkAdminRole(data.user.id);
       await fetchProfile(data.user.id);
@@ -141,9 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-    setIsAdmin(false);
+    await performSignOut();
   };
 
   const refreshProfile = async () => {
